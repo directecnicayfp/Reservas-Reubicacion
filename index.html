@@ -130,31 +130,72 @@
 
     // Validar solo lunes (1) y viernes (5)
     fechaInput.addEventListener('input', () => {
-      messageDiv.textContent = '';
-      const selectedDate = new Date(fechaInput.value + 'T00:00:00');
-      const day = selectedDate.getDay();
+  messageDiv.textContent = '';
+  const selectedDate = new Date(fechaInput.value + 'T00:00:00');
+  const day = selectedDate.getDay();
 
-      if (day !== 1 && day !== 5) {
+  if (day !== 1 && day !== 5) {
+    messageDiv.style.color = 'red';
+    messageDiv.textContent = 'Solo se pueden reservar turnos los días lunes y viernes.';
+    fechaInput.value = '';
+    horaSelect.innerHTML = '<option value="">Seleccione una fecha primero</option>';
+    return;
+  }
+
+  // Horarios base según día
+  let horariosBase = [];
+  if (day === 1) {
+    horariosBase = [
+      {value: "10:00", label: "10:00 - 11:00"},
+      {value: "11:00", label: "11:00 - 12:00"},
+      {value: "12:00", label: "12:00 - 13:00"}
+    ];
+  } else if (day === 5) {
+    horariosBase = [
+      {value: "12:00", label: "12:00 - 13:00"},
+      {value: "13:00", label: "13:00 - 14:00"},
+      {value: "14:00", label: "14:00 - 15:00"}
+    ];
+  }
+
+  // Mostrar "Cargando horarios disponibles..."
+  horaSelect.innerHTML = '<option>Cargando horarios disponibles...</option>';
+
+  // Consultar horarios ocupados al Web App
+  fetch(`${scriptURL}?fecha=${fechaInput.value}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
         messageDiv.style.color = 'red';
-        messageDiv.textContent = 'Solo se pueden reservar turnos los días lunes y viernes.';
-        fechaInput.value = '';
-        horaSelect.innerHTML = '<option value="">Seleccione una fecha primero</option>';
+        messageDiv.textContent = 'Error al obtener horarios ocupados: ' + data.error;
+        horaSelect.innerHTML = '<option value="">Seleccione una hora</option>';
         return;
       }
 
-      // Actualizar opciones de hora según día
-      let options = '<option value="">Seleccione una hora</option>';
-      if (day === 1) {
-        options += '<option value="10:00">10:00 - 11:00</option>';
-        options += '<option value="11:00">11:00 - 12:00</option>';
-        options += '<option value="12:00">12:00 - 13:00</option>';
-      } else if (day === 5) {
-        options += '<option value="12:00">12:00 - 13:00</option>';
-        options += '<option value="13:00">13:00 - 14:00</option>';
-        options += '<option value="14:00">14:00 - 15:00</option>';
+      const ocupados = data.ocupados || [];
+
+      // Filtrar horarios base para eliminar los ocupados
+      const horariosDisponibles = horariosBase.filter(h => !ocupados.includes(h.value));
+
+      if (horariosDisponibles.length === 0) {
+        horaSelect.innerHTML = '<option value="">No hay horarios disponibles para esta fecha</option>';
+      } else {
+        horaSelect.innerHTML = '<option value="">Seleccione una hora</option>';
+        horariosDisponibles.forEach(h => {
+          const option = document.createElement('option');
+          option.value = h.value;
+          option.textContent = h.label;
+          horaSelect.appendChild(option);
+        });
       }
-      horaSelect.innerHTML = options;
+    })
+    .catch(error => {
+      messageDiv.style.color = 'red';
+      messageDiv.textContent = 'Error al consultar horarios ocupados.';
+      console.error(error);
+      horaSelect.innerHTML = '<option value="">Seleccione una hora</option>';
     });
+});
 
     // URL de tu Google Apps Script Web App (reemplaza con tu URL)
     const scriptURL = 'https://script.google.com/macros/s/AKfycbwBLei7HKiXoeWdOEifTLmGePA2YhNf4DJf_chUoKoeyodiySVmOE9ubX8cqsHfbFfXjw/exec';
