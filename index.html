@@ -3,247 +3,296 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Reserva de Turno</title>
+  <title>Sistema de Reserva de Turnos</title>
   <style>
-    /* Reset básico */
     * {
       box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
+
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
-      margin: 0;
       display: flex;
       justify-content: center;
       align-items: center;
       padding: 20px;
     }
-    form {
+
+    .container {
       background: white;
       padding: 30px 40px;
       border-radius: 12px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-      max-width: 400px;
+      max-width: 450px;
       width: 100%;
-      color: #333;
     }
-    h2 {
+
+    h1 {
       text-align: center;
       margin-bottom: 25px;
-      color: #2575fc;
+      color: #333;
+      font-size: 24px;
     }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
     label {
       display: block;
-      margin-top: 15px;
+      margin-bottom: 8px;
       font-weight: 600;
+      color: #333;
     }
+
     input[type="text"],
     input[type="email"],
     input[type="date"],
     select {
       width: 100%;
-      padding: 10px 12px;
-      margin-top: 6px;
+      padding: 12px;
       border: 2px solid #ddd;
       border-radius: 8px;
       font-size: 16px;
       transition: border-color 0.3s ease;
     }
+
     input[type="text"]:focus,
     input[type="email"]:focus,
     input[type="date"]:focus,
     select:focus {
-      border-color: #2575fc;
+      border-color: #667eea;
       outline: none;
     }
+
     button {
-      margin-top: 25px;
       width: 100%;
       padding: 12px;
-      background: #2575fc;
+      background: #667eea;
       border: none;
       border-radius: 8px;
       color: white;
       font-size: 18px;
-      font-weight: 700;
+      font-weight: 600;
       cursor: pointer;
       transition: background-color 0.3s ease;
     }
+
     button:hover {
-      background: #1a52d1;
+      background: #5a67d8;
     }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
     .message {
       margin-top: 20px;
-      font-weight: 700;
+      padding: 12px;
+      border-radius: 8px;
       text-align: center;
-      min-height: 24px;
+      font-weight: 600;
+    }
+
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .loading {
+      background-color: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
     }
   </style>
 </head>
 <body>
 
-  <form id="reservaForm" novalidate>
-    <h2>Reserva tu turno</h2>
+  <div class="container">
+    <h1>📅 Reserva tu Turno</h1>
+    
+    <form id="reservaForm">
+      <div class="form-group">
+        <label for="nombre">Nombre completo</label>
+        <input type="text" id="nombre" name="nombre" placeholder="Ingresa tu nombre completo" required>
+      </div>
 
-    <label for="nombre">Nombre completo</label>
-    <input type="text" id="nombre" name="nombre" placeholder="Tu nombre completo" required />
+      <div class="form-group">
+        <label for="email">Correo electrónico</label>
+        <input type="email" id="email" name="email" placeholder="tu@email.com" required>
+      </div>
 
-    <label for="email">Correo electrónico</label>
-    <input type="email" id="email" name="email" placeholder="tu@email.com" required />
+      <div class="form-group">
+        <label for="fecha">Fecha del turno</label>
+        <input type="date" id="fecha" name="fecha" required>
+      </div>
 
-    <label for="fecha">Fecha del turno</label>
-    <input type="date" id="fecha" name="fecha" required />
+      <div class="form-group">
+        <label for="hora">Hora del turno</label>
+        <select id="hora" name="hora" required>
+          <option value="">Seleccione una fecha primero</option>
+        </select>
+      </div>
 
-    <label for="hora">Hora del turno</label>
-    <select id="hora" name="hora" required>
-      <option value="">Seleccione una fecha primero</option>
-    </select>
+      <button type="submit" id="submitBtn">Reservar Turno</button>
 
-    <button type="submit">Reservar</button>
-
-    <div class="message" id="message"></div>
-  </form>
+      <div id="message" class="message"></div>
+    </form>
+  </div>
 
   <script>
+    // URL de tu Google Apps Script Web App (REEMPLAZAR CON TU URL)
+    const scriptURL = 'https://script.google.com/macros/s/TU_URL_DE_GOOGLE_APPS_SCRIPT/exec';
+
+    // Elementos del DOM
     const form = document.getElementById('reservaForm');
     const fechaInput = document.getElementById('fecha');
     const horaSelect = document.getElementById('hora');
-    const messageDiv = document.getElementById('respuesta');
+    const messageDiv = document.getElementById('message');
+    const submitBtn = document.getElementById('submitBtn');
 
-   // Validar solo lunes (1) y viernes (5)
-  fechaInput.addEventListener('input', () => {
-  messageDiv.textContent = '';
-  const selectedDate = new Date(fechaInput.value + 'T00:00:00');
-  const day = selectedDate.getDay();
+    // Configurar fecha mínima como hoy
+    const today = new Date();
+    fechaInput.min = today.toISOString().split('T')[0];
 
-  if (day !== 1 && day !== 5) {
-    messageDiv.style.color = 'red';
-    messageDiv.textContent = 'Solo se pueden reservar turnos los días lunes y viernes.';
-    fechaInput.value = '';
-    horaSelect.innerHTML = '<option value="">Seleccione una fecha primero</option>';
-    return;
-  }
+    // Función para mostrar mensajes
+    function showMessage(text, type) {
+      messageDiv.textContent = text;
+      messageDiv.className = 'message ' + type;
+    }
 
-  // Horarios base según día
-  let horariosBase = [];
-  if (day === 1) {
-    horariosBase = [
-      {value: "10:00 - 11:00", label: "10:00 - 11:00"},
-      {value: "11:00 - 12:00", label: "11:00 - 12:00"},
-      {value: "12:00 - 13:00", label: "12:00 - 13:00"}
-    ];
-  } else if (day === 5) {
-    horariosBase = [
-      {value: "12:00 - 13:00", label: "12:00 - 13:00"},
-      {value: "13:00 - 14:00", label: "13:00 - 14:00"},
-      {value: "14:00 - 15:00", label: "14:00 - 15:00"}
-    ];
-  }
+    // Función para limpiar mensajes
+    function clearMessage() {
+      messageDiv.textContent = '';
+      messageDiv.className = 'message';
+    }
 
-  // Mostrar "Cargando horarios disponibles..."
-  horaSelect.innerHTML = '<option>Cargando horarios disponibles...</option>';
+    // Evento cuando se selecciona una fecha
+    fechaInput.addEventListener('input', () => {
+      clearMessage();
+      const fechaSeleccionada = fechaInput.value;
 
-  // Consultar horarios ocupados al Web App
-  fetch(`${scriptURL}?fecha=${fechaInput.value}`)
-    .then(response => response.json())
-    .then(data => {
-      if (data.error) {
-        messageDiv.style.color = 'red';
-        messageDiv.textContent = 'Error al obtener horarios ocupados: ' + data.error;
-        horaSelect.innerHTML = '<option value="">Seleccione una hora</option>';
+      if (!fechaSeleccionada) {
+        horaSelect.innerHTML = '<option value="">Seleccione una fecha primero</option>';
         return;
       }
 
-      const ocupados = data.ocupados || [];
+      const selectedDate = new Date(fechaSeleccionada + 'T00:00:00');
+      const day = selectedDate.getDay(); // 0 = Domingo, 1 = Lunes, ..., 5 = Viernes
 
-      // Filtrar horarios base para eliminar los ocupados
-      const horariosDisponibles = horariosBase.filter(h => !ocupados.includes(h.value));
-
-      if (horariosDisponibles.length === 0) {
-        horaSelect.innerHTML = '<option value="">No hay horarios disponibles para esta fecha</option>';
-      } else {
-        horaSelect.innerHTML = '<option value="">Seleccione una hora</option>';
-        horariosDisponibles.forEach(h => {
-          const option = document.createElement('option');
-          option.value = h.value;
-          option.textContent = h.label;
-          horaSelect.appendChild(option);
-        });
+      // Validar que sea lunes (1) o viernes (5)
+      if (day !== 1 && day !== 5) {
+        showMessage('Solo se pueden reservar turnos los días lunes y viernes.', 'error');
+        fechaInput.value = '';
+        horaSelect.innerHTML = '<option value="">Seleccione una fecha primero</option>';
+        return;
       }
-    })
-    .catch(error => {
-      messageDiv.style.color = 'red';
-      messageDiv.textContent = 'Error al consultar horarios ocupados.';
-      console.error(error);
-      horaSelect.innerHTML = '<option value="">Seleccione una hora</option>';
-    });
-});
 
-      const ocupados = data.ocupados || [];
+      horaSelect.innerHTML = '<option>Cargando horarios disponibles...</option>';
 
-      // Filtrar horarios base para eliminar los ocupados
-      const horariosDisponibles = horariosBase.filter(h => !ocupados.includes(h.value));
+      // Consultar horarios ocupados para esta fecha
+      fetch(`${scriptURL}?fecha=${fechaSeleccionada}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            showMessage('Error al obtener horarios ocupados: ' + data.error, 'error');
+            horaSelect.innerHTML = '<option value="">Seleccione una hora</option>';
+            return;
+          }
 
-      if (horariosDisponibles.length === 0) {
-        horaSelect.innerHTML = '<option value="">No hay horarios disponibles para esta fecha</option>';
-      } else {
-        horaSelect.innerHTML = '<option value="">Seleccione una hora</option>';
-        horariosDisponibles.forEach(h => {
-          const option = document.createElement('option');
-          option.value = h.value;
-          option.textContent = h.label;
-          horaSelect.appendChild(option);
+          const horariosOcupados = data.ocupados || [];
+          console.log('Horarios ocupados:', horariosOcupados);
+
+          // Definir horarios disponibles según el día
+          let horariosDisponibles = [];
+          if (day === 1) { // Lunes
+            horariosDisponibles = [
+              {value: "10:00 - 11:00", label: "10:00 - 11:00"},
+              {value: "11:00 - 12:00", label: "11:00 - 12:00"},
+              {value: "12:00 - 13:00", label: "12:00 - 13:00"}
+            ];
+          } else if (day === 5) { // Viernes
+            horariosDisponibles = [
+              {value: "12:00 - 13:00", label: "12:00 - 13:00"},
+              {value: "13:00 - 14:00", label: "13:00 - 14:00"},
+              {value: "14:00 - 15:00", label: "14:00 - 15:00"}
+            ];
+          }
+
+          // Filtrar horarios ya ocupados
+          const horariosFinales = horariosDisponibles.filter(h => !horariosOcupados.includes(h.value));
+
+          if (horariosFinales.length === 0) {
+            horaSelect.innerHTML = '<option value="">No hay horarios disponibles para esta fecha</option>';
+            showMessage('No hay horarios disponibles para esta fecha.', 'error');
+          } else {
+            horaSelect.innerHTML = '<option value="">Seleccione una hora</option>';
+            horariosFinales.forEach(h => {
+              const option = document.createElement('option');
+              option.value = h.value;
+              option.textContent = h.label;
+              horaSelect.appendChild(option);
+            });
+          }
+        })
+        .catch(error => {
+          showMessage('Error al consultar horarios ocupados. Intente nuevamente.', 'error');
+          horaSelect.innerHTML = '<option value="">Seleccione una hora</option>';
+          console.error('Error:', error);
         });
-      }
-    })
-    .catch(error => {
-      messageDiv.style.color = 'red';
-      messageDiv.textContent = 'Error al consultar horarios ocupados.';
-      console.error(error);
-      horaSelect.innerHTML = '<option value="">Seleccione una hora</option>';
     });
-});
 
-    // URL de tu Google Apps Script Web App (reemplaza con tu URL)
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwBLei7HKiXoeWdOEifTLmGePA2YhNf4DJf_chUoKoeyodiySVmOE9ubX8cqsHfbFfXjw/exec';
+    // Evento al enviar el formulario
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      clearMessage();
 
-    form.addEventListener('submit', e => {
-  e.preventDefault();
-  messageDiv.textContent = '';
-  messageDiv.style.color = 'black';
-  if (!form.checkValidity()) {
-    messageDiv.style.color = 'red';
-    messageDiv.textContent = 'Por favor completa todos los campos correctamente.';
-    return;
-  }
-  // Crear FormData para enviar como formulario
-  const formData = new FormData(form);
-  messageDiv.textContent = 'Enviando reserva...';
-  fetch(scriptURL, {
-    method: 'POST',
-    body: formData,
-    // No poner 'Content-Type', fetch lo asigna automáticamente para FormData
-  })
-  .then(response => response.json())
-  .then(response => {
-    if(response.result === 'success'){
-      messageDiv.style.color = 'green';
-      messageDiv.textContent = 'Turno reservado correctamente. Revisa tu correo.';
-      form.reset();
-      horaSelect.innerHTML = '<option value="">Seleccione una fecha primero</option>';
-    } else {
-      messageDiv.style.color = 'red';
-      messageDiv.textContent = 'Error al reservar turno. Intenta nuevamente.';
-      console.error(response.message);
-    }
-  })
-  .catch(error => {
-    messageDiv.style.color = 'red';
-    messageDiv.textContent = 'Error de conexión. Intenta nuevamente.';
-    console.error('Error:', error);
-  });
-});
+      // Validar formulario
+      if (!form.checkValidity()) {
+        showMessage('Por favor complete todos los campos correctamente.', 'error');
+        return;
+      }
+
+      // Deshabilitar botón para evitar múltiples envíos
+      submitBtn.disabled = true;
+      showMessage('Enviando reserva...', 'loading');
+
+      // Crear FormData
+      const formData = new FormData(form);
+
+      // Enviar datos al Google Apps Script
+      fetch(scriptURL, {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.result === 'success') {
+          showMessage('Turno reservado correctamente. Revisa tu correo electrónico.', 'success');
+          form.reset();
+          horaSelect.innerHTML = '<option value="">Seleccione una fecha primero</option>';
+        } else {
+          showMessage('Error al reservar turno: ' + (data.message || 'Intente nuevamente.'), 'error');
+        }
+        submitBtn.disabled = false;
+      })
+      .catch(error => {
+        showMessage('Error de conexión. Intente nuevamente.', 'error');
+        submitBtn.disabled = false;
+        console.error('Error:', error);
+      });
+    });
   </script>
 
 </body>
