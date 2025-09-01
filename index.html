@@ -107,27 +107,14 @@
 
   <script>
     const form = document.getElementById('reservaForm');
-    const fechaInput = document.getElementById('fechas');
-    const horaSelect = document.getElementById('horario');
+    const fechaInput = document.getElementById('fecha');
+    const horaSelect = document.getElementById('hora');
     const messageDiv = document.getElementById('respuesta');
 
    // Validar solo lunes (1) y viernes (5)
- const fechaInput = document.getElementById('fechas');
-const horaSelect = document.getElementById('horario');
-const messageDiv = document.getElementById('respuesta');
-
-fechaInput.addEventListener('input', () => {
-  console.log('Fecha seleccionada:', fechaInput.value);
+  fechaInput.addEventListener('input', () => {
   messageDiv.textContent = '';
-
-  const fechaSeleccionada = fechaInput.value; // yyyy-mm-dd
-
-  if (!fechaSeleccionada) {
-    horaSelect.innerHTML = '<option value="">Seleccione una fecha primero</option>';
-    return;
-  }
-
-  const selectedDate = new Date(fechaSeleccionada + 'T00:00:00');
+  const selectedDate = new Date(fechaInput.value + 'T00:00:00');
   const day = selectedDate.getDay();
 
   if (day !== 1 && day !== 5) {
@@ -138,13 +125,29 @@ fechaInput.addEventListener('input', () => {
     return;
   }
 
+  // Horarios base según día
+  let horariosBase = [];
+  if (day === 1) {
+    horariosBase = [
+      {value: "10:00 - 11:00", label: "10:00 - 11:00"},
+      {value: "11:00 - 12:00", label: "11:00 - 12:00"},
+      {value: "12:00 - 13:00", label: "12:00 - 13:00"}
+    ];
+  } else if (day === 5) {
+    horariosBase = [
+      {value: "12:00 - 13:00", label: "12:00 - 13:00"},
+      {value: "13:00 - 14:00", label: "13:00 - 14:00"},
+      {value: "14:00 - 15:00", label: "14:00 - 15:00"}
+    ];
+  }
+
+  // Mostrar "Cargando horarios disponibles..."
   horaSelect.innerHTML = '<option>Cargando horarios disponibles...</option>';
 
-  fetch(`${scriptURL}?fecha=${fechaSeleccionada}`)
+  // Consultar horarios ocupados al Web App
+  fetch(`${scriptURL}?fecha=${fechaInput.value}`)
     .then(response => response.json())
     .then(data => {
-      console.log('Respuesta del servidor:', data);
-
       if (data.error) {
         messageDiv.style.color = 'red';
         messageDiv.textContent = 'Error al obtener horarios ocupados: ' + data.error;
@@ -154,21 +157,7 @@ fechaInput.addEventListener('input', () => {
 
       const ocupados = data.ocupados || [];
 
-      let horariosBase = [];
-      if (day === 1) {
-        horariosBase = [
-          {value: "10:00 - 11:00", label: "10:00 - 11:00"},
-          {value: "11:00 - 12:00", label: "11:00 - 12:00"},
-          {value: "12:00 - 13:00", label: "12:00 - 13:00"}
-        ];
-      } else if (day === 5) {
-        horariosBase = [
-          {value: "12:00 - 13:00", label: "12:00 - 13:00"},
-          {value: "13:00 - 14:00", label: "13:00 - 14:00"},
-          {value: "14:00 - 15:00", label: "14:00 - 15:00"}
-        ];
-      }
-
+      // Filtrar horarios base para eliminar los ocupados
       const horariosDisponibles = horariosBase.filter(h => !ocupados.includes(h.value));
 
       if (horariosDisponibles.length === 0) {
@@ -186,7 +175,7 @@ fechaInput.addEventListener('input', () => {
     .catch(error => {
       messageDiv.style.color = 'red';
       messageDiv.textContent = 'Error al consultar horarios ocupados.';
-      console.error('Error en fetch:', error);
+      console.error(error);
       horaSelect.innerHTML = '<option value="">Seleccione una hora</option>';
     });
 });
