@@ -107,42 +107,29 @@
 
   <script>
     const form = document.getElementById('reservaForm');
-    const fechaInput = document.getElementById('fecha');
-    const horaSelect = document.getElementById('hora');
-    const messageDiv = document.getElementById('message');
+    const fechaInput = document.getElementById('fechas');
+    const horaSelect = document.getElementById('horario');
+    const messageDiv = document.getElementById('respuesta');
 
-    // Formatear fecha a yyyy-mm-dd
-    function formatDate(date) {
-      let d = new Date(date),
-          month = '' + (d.getMonth() + 1),
-          day = '' + d.getDate(),
-          year = d.getFullYear();
+   // Validar solo lunes (1) y viernes (5)
+ const fechaInput = document.getElementById('fechas');
+const horaSelect = document.getElementById('horario');
+const messageDiv = document.getElementById('respuesta');
 
-      if (month.length < 2) month = '0' + month;
-      if (day.length < 2) day = '0' + day;
-
-      return [year, month, day].join('-');
-    }
-
-    // Limitar fecha mínima a hoy
-    const today = new Date();
-    fechaInput.min = formatDate(today);
-
-    // Validar solo lunes (1) y viernes (5)
- fechaInput.addEventListener('input', () => {
+fechaInput.addEventListener('input', () => {
+  console.log('Fecha seleccionada:', fechaInput.value);
   messageDiv.textContent = '';
 
-  // Obtener la fecha seleccionada en formato yyyy-mm-dd (valor del input date)
-  const fechaSeleccionada = fechaInput.value; // ya está en formato yyyy-mm-dd
+  const fechaSeleccionada = fechaInput.value; // yyyy-mm-dd
 
   if (!fechaSeleccionada) {
     horaSelect.innerHTML = '<option value="">Seleccione una fecha primero</option>';
     return;
   }
 
-  // Validar que la fecha sea lunes o viernes (opcional)
   const selectedDate = new Date(fechaSeleccionada + 'T00:00:00');
   const day = selectedDate.getDay();
+
   if (day !== 1 && day !== 5) {
     messageDiv.style.color = 'red';
     messageDiv.textContent = 'Solo se pueden reservar turnos los días lunes y viernes.';
@@ -151,13 +138,13 @@
     return;
   }
 
-  // Mostrar mensaje de carga
   horaSelect.innerHTML = '<option>Cargando horarios disponibles...</option>';
 
-  // Hacer la petición GET al Web App con la fecha en formato yyyy-mm-dd
   fetch(`${scriptURL}?fecha=${fechaSeleccionada}`)
     .then(response => response.json())
     .then(data => {
+      console.log('Respuesta del servidor:', data);
+
       if (data.error) {
         messageDiv.style.color = 'red';
         messageDiv.textContent = 'Error al obtener horarios ocupados: ' + data.error;
@@ -167,7 +154,6 @@
 
       const ocupados = data.ocupados || [];
 
-      // Define horarios base según el día (lunes o viernes)
       let horariosBase = [];
       if (day === 1) {
         horariosBase = [
@@ -183,7 +169,6 @@
         ];
       }
 
-      // Filtrar horarios disponibles (excluir los ocupados)
       const horariosDisponibles = horariosBase.filter(h => !ocupados.includes(h.value));
 
       if (horariosDisponibles.length === 0) {
@@ -201,7 +186,7 @@
     .catch(error => {
       messageDiv.style.color = 'red';
       messageDiv.textContent = 'Error al consultar horarios ocupados.';
-      console.error(error);
+      console.error('Error en fetch:', error);
       horaSelect.innerHTML = '<option value="">Seleccione una hora</option>';
     });
 });
