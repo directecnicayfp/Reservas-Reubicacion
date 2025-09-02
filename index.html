@@ -5,14 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sistema de Reserva de Turnos</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
       display: flex;
@@ -20,7 +14,6 @@
       align-items: center;
       padding: 20px;
     }
-
     .container {
       background: white;
       padding: 30px 40px;
@@ -29,92 +22,22 @@
       max-width: 450px;
       width: 100%;
     }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 25px;
-      color: #333;
-      font-size: 24px;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-      color: #333;
-    }
-
-    input[type="text"],
-    input[type="email"],
-    input[type="date"],
-    select {
-      width: 100%;
-      padding: 12px;
-      border: 2px solid #ddd;
-      border-radius: 8px;
+    h1 { text-align: center; margin-bottom: 25px; color: #333; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 8px; font-weight: 600; }
+    input, select {
+      width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px;
       font-size: 16px;
-      transition: border-color 0.3s ease;
     }
-
-    input[type="text"]:focus,
-    input[type="email"]:focus,
-    input[type="date"]:focus,
-    select:focus {
-      border-color: #667eea;
-      outline: none;
-    }
-
     button {
-      width: 100%;
-      padding: 12px;
-      background: #667eea;
-      border: none;
-      border-radius: 8px;
-      color: white;
-      font-size: 18px;
-      font-weight: 600;
+      width: 100%; padding: 12px; background: #667eea; border: none;
+      border-radius: 8px; color: white; font-size: 18px; font-weight: 600;
       cursor: pointer;
-      transition: background-color 0.3s ease;
     }
-
-    button:hover {
-      background: #5a67d8;
-    }
-
-    button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-
-    .message {
-      margin-top: 20px;
-      padding: 12px;
-      border-radius: 8px;
-      text-align: center;
-      font-weight: 600;
-    }
-
-    .success {
-      background-color: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
-    }
-
-    .error {
-      background-color: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-    }
-
-    .loading {
-      background-color: #d1ecf1;
-      color: #0c5460;
-      border: 1px solid #bee5eb;
-    }
+    .message { margin-top: 20px; padding: 12px; border-radius: 8px; text-align: center; font-weight: 600; }
+    .success { background-color: #d4edda; color: #155724; }
+    .error { background-color: #f8d7da; color: #721c24; }
+    .loading { background-color: #d1ecf1; color: #0c5460; }
   </style>
 </head>
 <body>
@@ -125,12 +48,12 @@
     <form id="reservaForm">
       <div class="form-group">
         <label for="nombre">Nombre completo</label>
-        <input type="text" id="nombre" name="nombre" placeholder="Ingresa tu nombre completo" required>
+        <input type="text" id="nombre" name="nombre" required>
       </div>
 
       <div class="form-group">
         <label for="email">Correo electrónico</label>
-        <input type="email" id="email" name="email" placeholder="tu@email.com" required>
+        <input type="email" id="email" name="email" required>
       </div>
 
       <div class="form-group">
@@ -146,52 +69,42 @@
       </div>
 
       <button type="submit" id="submitBtn">Reservar Turno</button>
-
       <div id="message" class="message"></div>
     </form>
   </div>
 
   <script>
-    // URL de tu Google Apps Script Web App (REEMPLAZAR CON TU URL)
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwBLei7HKiXoeWdOEifTLmGePA2YhNf4DJf_chUoKoeyodiySVmOE9ubX8cqsHfbFfXjw/exec';
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbwBLei7HKiXoeWdOEifTLmGePA2YhNf4DJf_chUoKoeyodiySVmOE9ubX8cqsHfbFfXjw/exec'; // 👈 reemplazar con tu URL desplegada
 
-    // Elementos del DOM
     const form = document.getElementById('reservaForm');
     const fechaInput = document.getElementById('fecha');
     const horaSelect = document.getElementById('hora');
     const messageDiv = document.getElementById('message');
     const submitBtn = document.getElementById('submitBtn');
 
-    // Configurar fecha mínima como hoy
     const today = new Date();
     fechaInput.min = today.toISOString().split('T')[0];
 
-    // Función para mostrar mensajes
     function showMessage(text, type) {
       messageDiv.textContent = text;
       messageDiv.className = 'message ' + type;
     }
-
-    // Función para limpiar mensajes
     function clearMessage() {
       messageDiv.textContent = '';
       messageDiv.className = 'message';
     }
 
-    // Evento cuando se selecciona una fecha
     fechaInput.addEventListener('input', () => {
       clearMessage();
       const fechaSeleccionada = fechaInput.value;
-
       if (!fechaSeleccionada) {
         horaSelect.innerHTML = '<option value="">Seleccione una fecha primero</option>';
         return;
       }
 
       const selectedDate = new Date(fechaSeleccionada + 'T00:00:00');
-      const day = selectedDate.getDay(); // 0 = Domingo, 1 = Lunes, ..., 5 = Viernes
+      const day = selectedDate.getDay();
 
-      // Validar que sea lunes (1) o viernes (5)
       if (day !== 1 && day !== 5) {
         showMessage('Solo se pueden reservar turnos los días lunes y viernes.', 'error');
         fechaInput.value = '';
@@ -201,9 +114,8 @@
 
       horaSelect.innerHTML = '<option>Cargando horarios disponibles...</option>';
 
-      // Consultar horarios ocupados para esta fecha
       fetch(`${scriptURL}?fecha=${fechaSeleccionada}`)
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
           if (data.error) {
             showMessage('Error al obtener horarios ocupados: ' + data.error, 'error');
@@ -211,89 +123,70 @@
             return;
           }
 
-          const horariosOcupados = data.ocupados || [];
-          console.log('Horarios ocupados:', horariosOcupados);
+          const horariosOcupados = (data.ocupados || []).map(h => h.trim());
 
-          // Definir horarios disponibles según el día
           let horariosDisponibles = [];
-          if (day === 1) { // Lunes
-            horariosDisponibles = [
-              {value: "10:00 - 11:00", label: "10:00 - 11:00"},
-              {value: "11:00 - 12:00", label: "11:00 - 12:00"},
-              {value: "12:00 - 13:00", label: "12:00 - 13:00"}
-            ];
-          } else if (day === 5) { // Viernes
-            horariosDisponibles = [
-              {value: "12:00 - 13:00", label: "12:00 - 13:00"},
-              {value: "13:00 - 14:00", label: "13:00 - 14:00"},
-              {value: "14:00 - 15:00", label: "14:00 - 15:00"}
-            ];
+          if (day === 1) {
+            horariosDisponibles = ["10:00 - 11:00", "11:00 - 12:00", "12:00 - 13:00"];
+          } else if (day === 5) {
+            horariosDisponibles = ["12:00 - 13:00", "13:00 - 14:00", "14:00 - 15:00"];
           }
 
-          // Filtrar horarios ya ocupados
-          const horariosFinales = horariosDisponibles.filter(h => !horariosOcupados.includes(h.value));
+          const horariosFinales = horariosDisponibles.filter(h => !horariosOcupados.includes(h));
 
-          if (horariosFinales.length === 0) {
-            horaSelect.innerHTML = '<option value="">No hay horarios disponibles para esta fecha</option>';
-            showMessage('No hay horarios disponibles para esta fecha.', 'error');
-          } else {
+          horaSelect.innerHTML = '';
+          if (horariosFinales.length > 0) {
             horaSelect.innerHTML = '<option value="">Seleccione una hora</option>';
-            horariosFinales.forEach(h => {
+            horariosFinales.forEach(hora => {
               const option = document.createElement('option');
-              option.value = h.value;
-              option.textContent = h.label;
+              option.value = hora;
+              option.textContent = hora;
               horaSelect.appendChild(option);
             });
+          } else {
+            horaSelect.innerHTML = '<option value="">No hay horarios disponibles</option>';
           }
         })
-        .catch(error => {
-          showMessage('Error al consultar horarios ocupados. Intente nuevamente.', 'error');
+        .catch(() => {
+          showMessage('Error al consultar horarios ocupados.', 'error');
           horaSelect.innerHTML = '<option value="">Seleccione una hora</option>';
-          console.error('Error:', error);
         });
     });
 
-    // Evento al enviar el formulario
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       clearMessage();
 
-      // Validar formulario
       if (!form.checkValidity()) {
         showMessage('Por favor complete todos los campos correctamente.', 'error');
         return;
       }
 
-      // Deshabilitar botón para evitar múltiples envíos
       submitBtn.disabled = true;
       showMessage('Enviando reserva...', 'loading');
 
-      // Crear FormData
       const formData = new FormData(form);
 
-      // Enviar datos al Google Apps Script
-      fetch(scriptURL, {
-        method: 'POST',
-        body: formData
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.result === 'success') {
-          showMessage('Turno reservado correctamente. Revisa tu correo electrónico.', 'success');
-          form.reset();
-          horaSelect.innerHTML = '<option value="">Seleccione una fecha primero</option>';
-        } else {
-          showMessage('Error al reservar turno: ' + (data.message || 'Intente nuevamente.'), 'error');
-        }
-        submitBtn.disabled = false;
-      })
-      .catch(error => {
-        showMessage('Error de conexión. Intente nuevamente.', 'error');
-        submitBtn.disabled = false;
-        console.error('Error:', error);
-      });
+      fetch(scriptURL, { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+          if (data.result === 'success') {
+            showMessage('Turno reservado correctamente. Revisa tu correo electrónico.', 'success');
+            form.reset();
+            horaSelect.innerHTML = '<option value="">Seleccione una fecha primero</option>';
+          } else {
+            showMessage('Error: ' + (data.message || 'Intente nuevamente.'), 'error');
+          }
+          submitBtn.disabled = false;
+        })
+        .catch(() => {
+          showMessage('Error de conexión. Intente nuevamente.', 'error');
+          submitBtn.disabled = false;
+        });
     });
   </script>
+</body>
+</html>
 
 </body>
 </html>
